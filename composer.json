@@ -1,5 +1,5 @@
 {
-    "name": "mcn/elastic-search",
+    "name": "joacub/elastic-search",
     "description": "A module that helps integration of elastic search",
     "type": "library",
     "license": "BSD3",

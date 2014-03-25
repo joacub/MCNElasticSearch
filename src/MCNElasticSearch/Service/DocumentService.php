@@ -132,7 +132,7 @@ class DocumentService implements DocumentServiceInterface
         $this->getEventManager()
              ->trigger(__FUNCTION__ . '.post', $this, compact('document', 'object', 'response'));
 
-        if (! $response->isOk()) {
+        if ( $response->getError()) {
             throw new Exception\RuntimeException($response->getError());
         }
     }
@@ -168,7 +168,7 @@ class DocumentService implements DocumentServiceInterface
         $this->getEventManager()
              ->trigger(__FUNCTION__ . '.post', $this, compact('document', 'object', 'response'));
 
-        if (! $response->isOk()) {
+        if ($response->getError()) {
             throw new Exception\RuntimeException($response->getError());
         }
     }
@@ -199,7 +199,7 @@ class DocumentService implements DocumentServiceInterface
         $this->getEventManager()
              ->trigger(__FUNCTION__ . '.post', $this, compact('document', 'object', 'response'));
 
-        if (! $response->isOk()) {
+        if ($response->getError()) {
             throw new Exception\RuntimeException($response->getError());
         }
     }

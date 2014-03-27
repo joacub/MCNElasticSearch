@@ -9,6 +9,7 @@ use MCNElasticSearch\QueryBuilder\Composite\CompositeInterface;
 use MCNElasticSearch\QueryBuilder\Facet\FacetInterface;
 use MCNElasticSearch\QueryBuilder\Filter\FilterInterface;
 use MCNElasticSearch\QueryBuilder\Query\QueryInterface;
+use Nette\Diagnostics\Debugger;
 
 class QueryBuilder
 {
@@ -147,6 +148,9 @@ class QueryBuilder
         if ($this->filter instanceof CompositeInterface && $this->filter->isEmpty()) {
             return [];
         }
+        
+        if($this->filter === null)
+            return [];
 
         return $this->filter->toArray();
     }

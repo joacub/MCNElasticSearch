@@ -33,91 +33,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * @author      Antoine Hedgecock <antoine@pmg.se>
- * @author      Jonas Eriksson <jonas@pmg.se>
  *
  * @copyright   2011-2014 Antoine Hedgecock
  * @license     http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
 
-namespace MCNElasticSearch\Service\Document\Writer\Adapter;
+namespace MCNElasticSearch\Factory\Controller;
 
-use Elasticsearch\Client;
-use MCNElasticSearch\Service\Document\DocumentEntity;
-use MCNElasticSearch\Service\Document\Writer\WriterInterface;
-use Nette\Diagnostics\Debugger;
+use MCNElasticSearch\Controller\MappingController;
+use MCNElasticSearch\Service\MappingService;
+use Zend\Console\Console;
+use Zend\ServiceManager\Exception;
+use Zend\ServiceManager\FactoryInterface;
+use Zend\ServiceManager\ServiceLocatorInterface;
+use MCNElasticSearch\Controller\IndexController;
+use MCNElasticSearch\Service\DocumentService;
+use MCNElasticSearch\Service\MetadataService;
 
 /**
- * Class Immediate
- *
- * A very basic writer that just pushes everything directly to elastic search
+ * Class MappingControllerFactoryTest
  */
-class Immediate implements WriterInterface
+class IndexControllerFactory implements FactoryInterface
 {
     /**
-     * @var \Elasticsearch\Client
-     */
-    protected $client;
-
-    /**
-     * @param Client $client
-     */
-    public function __construct(Client $client)
-    {
-        $this->client = $client;
-    }
-
-    /**
-     * Update a document
+     * Create service
      *
-     * @param \MCNElasticSearch\Service\Document\DocumentEntity $document
+     * @param \Zend\ServiceManager\ServiceLocatorInterface|\Zend\Mvc\Controller\ControllerManager $controllerManager
      *
-     * @return void
+     * @throws \Zend\ServiceManager\Exception\ServiceNotCreatedException
+     *
+     * @return MappingController
      */
-    public function update(DocumentEntity $document)
+    public function createService(ServiceLocatorInterface $controllerManager)
     {
-        $docInsert = $doc = $document->toArray();
+        $sl = $controllerManager->getServiceLocator();
 
-        // Move it
-        $tmp = $doc['body'];
-        unset($doc['body']);
-        $doc['body']['doc'] = $tmp;
-        $docInsert['body'] = $tmp;
-
-        $docExist = $doc;
-        unset($docExist['body']);
-        //comprobando que exista si no daria error en caso de no existir
-        if($this->client->exists($docExist)) {
-            $this->client->update($doc);
+        if (! Console::isConsole()) {
+            throw new Exception\ServiceNotCreatedException('Can only be utilised via CLI');
         }
-        
-        $this->client->index($docInsert);
-    }
 
-    /**
-     * Delete a document
-     *
-     * @param \MCNElasticSearch\Service\Document\DocumentEntity $document
-     *
-     * @return void
-     */
-    public function delete(DocumentEntity $document)
-    {
-        $doc = $document->toArray();
-
-        unset($doc['body']);
-
-        $this->client->delete($doc);
-    }
-
-    /**
-     * Insert a document
-     *
-     * @param \MCNElasticSearch\Service\Document\DocumentEntity $document
-     *
-     * @return void
-     */
-    public function insert(DocumentEntity $document)
-    {
-        $this->client->index($document->toArray());
+        return new IndexController(
+            $sl->get('Console'),
+            $sl->get(MetadataService::class),
+            $sl->get(DocumentService::class),
+            $sl->get('doctrine.entitymanager.orm_default')
+        );
     }
 }

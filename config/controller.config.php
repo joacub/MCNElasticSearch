@@ -40,9 +40,12 @@
 
 use MCNElasticSearch\Controller\MappingController;
 use MCNElasticSearch\Factory\Controller\MappingControllerFactory;
+use MCNElasticSearch\Controller\IndexController;
+use MCNElasticSearch\Factory\Controller\IndexControllerFactory;
 
 return [
     'factories' => [
-        MappingController::class => MappingControllerFactory::class
+        MappingController::class => MappingControllerFactory::class,
+        IndexController::class => IndexControllerFactory::class
     ]
 ];

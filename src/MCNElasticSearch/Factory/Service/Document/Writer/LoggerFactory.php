@@ -48,6 +48,7 @@ use MCNElasticSearch\Factory\Service\Exception\ConfigurationException;
 use Psr\Log\LoggerInterface;
 use Zend\ServiceManager\DelegatorFactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
+use Nette\Diagnostics\Debugger;
 
 /**
  * Class LoggerFactory
@@ -69,7 +70,7 @@ class LoggerFactory implements DelegatorFactoryInterface
      */
     public function createDelegatorWithName(ServiceLocatorInterface $serviceLocator, $name, $requestedName, $callback)
     {
-        $config = $serviceLocator->get('Config');
+        $config = $serviceLocator->getServiceLocator()->get('Config');
         if (! isset($config['MCNElasticSearch']['logging'])) {
             throw ConfigurationException::missingConfiguration('logging');
         }

@@ -99,6 +99,8 @@ class MetadataOptions extends AbstractOptions
      * @var array
      */
     protected $mapping = [];
+    
+    protected $settings = [];
 
     /**
      * @param string $hydrator
@@ -194,6 +196,16 @@ class MetadataOptions extends AbstractOptions
     public function getMapping()
     {
         return $this->mapping;
+    }
+    
+    public function setSettings(array $settings)
+    {
+        $this->settings = $settings;
+    }
+    
+    public function getSettings()
+    {
+        return $this->settings;
     }
 
     /**

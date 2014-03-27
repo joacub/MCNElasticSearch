@@ -46,32 +46,52 @@ use MCNElasticSearch\Service\MappingServiceInterface;
 use Zend\EventManager\Event;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Console\Adapter\AdapterInterface as Console;
+use MCNElasticSearch\Service\DocumentServiceInterface;
+use Doctrine\ORM\EntityManager;
+use MCNElasticSearch\Service\MetadataServiceInterface;
+use Doctrine\ORM\Query;
+use DoctrineModule\Stdlib\Hydrator\DoctrineObject;
+use Doctrine\ORM\PersistentCollection;
+use Doctrine\Common\Persistence\Mapping\ClassMetadata;
 
 /**
  * Class MappingController
  *
  * @method \Zend\Console\Request getRequest
  */
-class MappingController extends AbstractActionController
+class IndexController extends AbstractActionController
 {
     /**
-     * @var \MCNElasticSearch\Service\MappingServiceInterface
+     * @var \MCNElasticSearch\Service\DocumentServiceInterface
      */
     protected $service;
+    
+    /**
+    * @var \MCNElasticSearch\Service\MetadataServiceInterface
+    */
+    protected $metadataService;
 
     /**
      * @var \Zend\Console\Adapter\AdapterInterface
      */
     protected $console;
+    
+    /**
+     * 
+     * @var EntityManager
+     */
+    protected $em;
 
     /**
      * @param \Zend\Console\Adapter\AdapterInterface            $console
      * @param \MCNElasticSearch\Service\MappingServiceInterface $service
      */
-    public function __construct(Console $console, MappingServiceInterface $service)
+    public function __construct(Console $console, MetadataServiceInterface $metadataService, DocumentServiceInterface $service, EntityManager $em)
     {
         $this->console = $console;
         $this->service = $service;
+        $this->metadataService = $metadataService;
+        $this->em = $em;
     }
 
     /**
@@ -118,33 +138,75 @@ class MappingController extends AbstractActionController
         }
     }
 
-    /**
-     * Create the schema
-     */
-    public function createAction()
-    {
-        $this->service->getEventManager()->attach('create', [$this, 'progress']);
-        $this->service->create();
-    }
-
-    /**
-     * Delete the entire mapping
-     */
-    public function deleteAction()
-    {
-        $skipPrompt = $this->getRequest()->getParam('y', false);
-
-        if (! $skipPrompt && !$this->prompt()) {
-            return;
-        }
-
-        $this->service->getEventManager()->attach('delete', [$this, 'progress']);
-        $this->service->delete();
-    }
-    
     public function reIndexAction()
     {
-        $this->service->getEventManager()->attach('create', [$this, 'progress']);
-        $this->service->create();
+//         $this->service->getEventManager()->attach('create', [$this, 'progress']);
+        
+        ignore_user_abort(true);
+        set_time_limit(0);
+        ini_set("memory_limit", "1000M");
+        
+        $allMetadata = $this->metadataService->getAllMetadata();
+        $hydrator = new DoctrineObject($this->em);
+        foreach($allMetadata as $entity => $metadataEs) {
+            $repo = $this->em->getRepository($entity);
+            
+            $metadata = $this->em->getMetadataFactory()->getMetadataFor($entity);
+            $metadata instanceof ClassMetadata;
+            $associationNames = $metadata->getAssociationNames();
+            
+            $lastId = 0;
+            while (true) {
+                $qb = $repo->createQueryBuilder('root');
+                $qb->where('root.id > ' . $lastId);
+                $qb->setMaxResults(1000);
+                
+                foreach($associationNames as $k => $assocName) {
+                    if($metadata->isSingleValuedAssociation($assocName)) {
+                        $qb->leftJoin('root.' . $assocName, $assocName . $k);
+                        $qb->addSelect($assocName . $k);
+                    }
+                }
+                
+                $objects = $qb->getQuery()->getResult();
+                
+                if(!count($objects)) {
+                    break;
+                }
+                
+                foreach($objects as $object) {
+                    
+                    foreach($associationNames as $k => $assocName) {
+                        if($metadata->isSingleValuedAssociation($assocName)) {
+                            $getter = 'get' . ucfirst($assocName);
+                            $setter = 'set' . ucfirst($assocName); 
+                            $data = $object->$getter();
+                            
+                            if(is_array($data) || $data instanceof PersistentCollection) {
+                                foreach($data as $k => $v) {
+                                    $data[$k] = $hydrator->extract($v);
+            //                         $data[$k] = array('id' => $v->getId());
+                                }
+                            } else {
+                                if($data) {
+                                    $data = $hydrator->extract($data);
+            //                         $data = array('id' => $data->getId());
+                                }
+                            }
+                        
+                            $object->$setter($data);
+                                    }
+                    }
+                    
+                    $this->service->update($object);
+                    $lastId = $object->getId();
+                    $this->em->clear($object);
+                    $this->em->detach($object);
+                }
+            }
+            
+            
+        }
+        
     }
 }

@@ -29,4 +29,9 @@ class QueryString implements QueryInterface
             'query' => $this->queryString
         ] + $this->options];
     }
+    
+    public function setOption($option, $value)
+    {
+        $this->options[$option] = $value;
+    }
 }

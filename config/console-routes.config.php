@@ -37,29 +37,39 @@
  * @copyright   2011-2014 Antoine Hedgecock
  * @license     http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
-
 use MCNElasticSearch\Controller\MappingController;
+use MCNElasticSearch\Controller\IndexController;
 
 return [
     'es-delete-mapping' => [
         'options' => [
-            'route'    => 'es mapping delete [-y]',
+            'route' => 'es mapping delete [-y]',
             'defaults' => [
-
+                
                 'controller' => MappingController::class,
-                'action'     => 'delete',
+                'action' => 'delete'
             ]
         ]
     ],
-
+    
     'es-build-mapping' => [
         'options' => [
-            'route'    => 'es mapping create',
+            'route' => 'es mapping create',
             'defaults' => [
-
+                
                 'controller' => MappingController::class,
-                'action'     => 'create',
+                'action' => 'create'
             ]
         ]
     ],
+    'es-build-index' => [
+        'options' => [
+            'route' => 'es index create',
+            'defaults' => [
+                
+                'controller' => IndexController::class,
+                'action' => 'reIndex'
+            ]
+        ]
+    ]
 ];

@@ -37,7 +37,6 @@
  * @copyright   2011-2014 Antoine Hedgecock
  * @license     http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
-
 namespace MCNElasticSearch\Service;
 
 use Elasticsearch\Client;
@@ -53,22 +52,25 @@ class MappingService implements MappingServiceInterface
     use EventManagerAwareTrait;
 
     /**
+     *
      * @var \Elasticsearch\Client
      */
     protected $client;
 
     /**
+     *
      * @var MetadataService
      */
     protected $metadata;
 
     /**
-     * @param \Elasticsearch\Client $client
-     * @param MetadataService       $metadata
+     *
+     * @param \Elasticsearch\Client $client            
+     * @param MetadataService $metadata            
      */
     public function __construct(Client $client, MetadataService $metadata)
     {
-        $this->client   = $client;
+        $this->client = $client;
         $this->metadata = $metadata;
     }
 
@@ -77,53 +79,79 @@ class MappingService implements MappingServiceInterface
      *
      * Be aware that to properly handle the response you must listen to the create event
      *
-     * @param array $types List of type names to build
-     *
+     * @param array $types
+     *            List of type names to build
+     *            
      * @return void
      */
     public function create(array $types = [])
     {
         $list = $this->metadata->getAllMetadata();
-
+        
         if (! empty($types)) {
-            array_filter($list, function (MetadataOptions $t) use ($types) {
+            array_filter($list, function (MetadataOptions $t) use($types)
+            {
                 return in_array($t->getType(), $types);
             });
         }
-
-        $extract = function (MetadataOptions $metadata) {
+        
+        $extract = function (MetadataOptions $metadata)
+        {
             return $metadata->getIndex();
         };
-
+        
         $indexes = array_map($extract, $list);
         $indexes = array_unique($indexes);
-
-        array_walk($indexes, function ($index) {
-            if (! $this->client->indices()->exists(['index' => $index])) {
-                $this->client->indices()->create(['index' => $index]);
+        
+        array_walk($indexes, function ($index)
+        {
+            if (! $this->client->indices()->exists([
+                'index' => $index
+            ])) {
+                $this->client->indices()->create([
+                    'index' => $index
+                ]);
             }
         });
-
-        /** @var $metadata \MCNElasticSearch\Options\MetadataOptions */
+        
+        /**
+         * @var $metadata \MCNElasticSearch\Options\MetadataOptions
+         */
         foreach ($list as $metadata) {
-
+            
             try {
-
+                
                 $mapping = [
                     'index' => $metadata->getIndex(),
-                    'type'  => $metadata->getType(),
-                    'body'  => [
+                    'type' => $metadata->getType(),
+                    'body' => [
                         $metadata->getType() => $metadata->getMapping()
                     ]
                 ];
-
+                
+                $settings = [
+                    'index' => $metadata->getIndex(),
+                    'body' => [
+                        'index' => $metadata->getSettings()
+                    ]
+                ];
+                
+                $indexCloseOpen = [
+                'index' => $metadata->getIndex(),
+                ];
+                
                 $response = $this->client->indices()->putMapping($mapping);
-
+                
+                $this->client->indices()->close($indexCloseOpen);
+                $this->client->indices()->putSettings($settings);
+                $this->client->indices()->open($indexCloseOpen);
             } catch (Exception $exception) {
-                $response = ['ok' => false, 'error' => $exception->getMessage()];
+                $response = [
+                    'ok' => false,
+                    'error' => $exception->getMessage()
+                ];
             } finally {
-                $this->getEventManager()
-                     ->trigger('create', $this, compact('mapping', 'response', 'metadata'));
+                $this->getEventManager()->trigger('create', $this, compact('mapping', 'response', 'metadata'));
             }
         }
     }
@@ -133,43 +161,43 @@ class MappingService implements MappingServiceInterface
      *
      * Be aware that to properly handle the response you must listen to the delete event
      *
-     * @param array $types
+     * @param array $types            
      *
      * @return void
      */
     public function delete(array $types = [])
     {
         $list = $this->metadata->getAllMetadata();
-
+        
         if (! empty($types)) {
-            array_filter($list, function (MetadataOptions $t) use ($types) {
+            array_filter($list, function (MetadataOptions $t) use($types)
+            {
                 return in_array($t->getType(), $types);
             });
         }
-
-        /** @var $metadata \MCNElasticSearch\Options\MetadataOptions */
+        
+        /**
+         * @var $metadata \MCNElasticSearch\Options\MetadataOptions
+         */
         foreach ($list as $metadata) {
-
+            
             try {
-
+                
                 $params = [
                     'index' => $metadata->getIndex(),
-                    'type'  => $metadata->getType()
+                    'type' => $metadata->getType()
                 ];
-
+                
                 $response = $this->client->indices()->deleteMapping($params);
-
             } catch (Exception $exception) {
-
+                
                 $response = [
-                    'ok'    => false,
+                    'ok' => false,
                     'error' => $exception->getMessage()
                 ];
-
             } finally {
-
-                $this->getEventManager()
-                    ->trigger('delete', $this, compact('response', 'metadata'));
+                
+                $this->getEventManager()->trigger('delete', $this, compact('response', 'metadata'));
             }
         }
     }

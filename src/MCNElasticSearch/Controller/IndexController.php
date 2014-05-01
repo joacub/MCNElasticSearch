@@ -146,9 +146,15 @@ class IndexController extends AbstractActionController
         set_time_limit(0);
         ini_set("memory_limit", "1000M");
         
+        $index = $this->getRequest()->getParam('index');
+        
         $allMetadata = $this->metadataService->getAllMetadata();
         $hydrator = new DoctrineObject($this->em);
         foreach($allMetadata as $entity => $metadataEs) {
+            
+            if($index && $entity != $index)
+                continue;
+            
             $repo = $this->em->getRepository($entity);
             
             $metadata = $this->em->getMetadataFactory()->getMetadataFor($entity);

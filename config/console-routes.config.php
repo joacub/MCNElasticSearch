@@ -64,7 +64,7 @@ return [
     ],
     'es-build-index' => [
         'options' => [
-            'route' => 'es index create',
+            'route' => 'es index create <index>',
             'defaults' => [
                 
                 'controller' => IndexController::class,

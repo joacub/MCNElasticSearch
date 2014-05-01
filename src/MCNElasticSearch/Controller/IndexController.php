@@ -148,7 +148,7 @@ class IndexController extends AbstractActionController
         
         $index = $this->getRequest()->getParam('index');
         
-        var_dump($index);exit;
+        var_dump($index);
         
         $allMetadata = $this->metadataService->getAllMetadata();
         $hydrator = new DoctrineObject($this->em);

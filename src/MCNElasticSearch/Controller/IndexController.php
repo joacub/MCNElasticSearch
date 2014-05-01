@@ -153,10 +153,10 @@ class IndexController extends AbstractActionController
         $allMetadata = $this->metadataService->getAllMetadata();
         $hydrator = new DoctrineObject($this->em);
         foreach($allMetadata as $entity => $metadataEs) {
-            
+            var_dump($entity);
             if($index && $entity != $index)
                 continue;
-            
+            continue;
             $repo = $this->em->getRepository($entity);
             
             $metadata = $this->em->getMetadataFactory()->getMetadataFor($entity);

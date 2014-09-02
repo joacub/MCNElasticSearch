@@ -162,7 +162,8 @@ class IndexController extends AbstractActionController
             $lastId = 0;
             while (true) {
                 $qb = $repo->createQueryBuilder('root');
-                $qb->where('root.id < ' . $lastId);
+                if($lastId)
+                    $qb->where('root.id < ' . $lastId);
                 $qb->orderBy('root.id', 'DESC');
                 $qb->setMaxResults(1000);
                 
